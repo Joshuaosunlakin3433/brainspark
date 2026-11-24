@@ -25,6 +25,9 @@
   --color-lesson-100: #eef0fb;
   --color-success-500: #22c55e;
 
+  /* Warm off-white page canvas (home reference) */
+  --color-canvas: #fbf8f5;
+
   /* 03 Type scale */
   --text-display-1: 3rem;
   --text-display-1--line-height: 3.5rem;
@@ -61,6 +64,15 @@
 @theme inline {
   --font-sans: var(--font-inter);
   --font-display: var(--font-playfair);
+}
+
+/* Subtle diagonal hatch for the page gutters (home reference) */
+@utility bg-hatch {
+  background-image: repeating-linear-gradient(
+    135deg,
+    var(--color-neutral-200) 0 1px,
+    transparent 1px 9px
+  );
 }
 
 body {
