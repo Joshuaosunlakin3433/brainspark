@@ -19,7 +19,7 @@ export function Logo({ className, size = "md" }: { className?: string; size?: "m
           size === "lg" ? "text-h1" : "text-h3",
         )}
       >
-        Vertex
+        BrainSpark
       </span>
     </span>
   );

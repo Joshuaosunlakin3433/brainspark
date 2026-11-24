@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* Vertex design system tokens — source: design/vertex-designsystem.png */
+/* BrainSpark design system tokens — source: design/vertex-designsystem.png */
 @theme {
   /* 01 Colors — Primary */
   --color-primary-600: #ea580c; /* hover state for primary buttons/links */

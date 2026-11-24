@@ -34,7 +34,7 @@ import {
 } from "@/components/ui";
 import { cn } from "@/lib/cn";
 
-export const metadata: Metadata = { title: "Design System · Vertex" };
+export const metadata: Metadata = { title: "Design System · BrainSpark" };
 
 function Section({
   n,
@@ -151,7 +151,7 @@ export default function DesignSystemPage() {
             Design System
           </h1>
           <p className="mt-5 text-[13px] leading-[22px] text-neutral-700">
-            A unified design language for Vertex learning platform. Clean, modern and focused on
+            A unified design language for BrainSpark learning platform. Clean, modern and focused on
             clarity, consistency and intuitive learning experiences.
           </p>
           <p className="mt-8 text-[10px] tracking-[0.12em] text-neutral-700 uppercase">
