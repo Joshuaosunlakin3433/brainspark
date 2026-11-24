@@ -56,7 +56,7 @@ function BarCluster({
 export default function Home() {
   return (
     <div className="flex flex-1 flex-col bg-canvas bg-hatch">
-      <div className="mx-auto flex w-full max-w-241 flex-1 flex-col bg-canvas min-[964px]:border-x min-[964px]:border-neutral-200">
+      <div className="mx-auto flex w-full max-w-270 flex-1 flex-col bg-canvas min-[1080px]:border-x min-[1080px]:border-neutral-200">
         <SiteHeader />
 
         <main className="flex flex-1 flex-col">
@@ -70,8 +70,8 @@ export default function Home() {
               <br />
               in plain English.
             </h1>
-            <p className="mt-6 max-w-114 text-body-lg text-neutral-700 sm:text-xl sm:leading-8.5">
-              Vertex understands what you want to learn and finds the exact lessons across all
+            <p className="mt-6 max-w-128 text-body-lg text-neutral-700 sm:text-xl sm:leading-8.5">
+              BrainSpark understands what you want to learn and finds the exact lessons across all
               your courses.
             </p>
             <Link
