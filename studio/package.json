@@ -9,7 +9,9 @@
     "deploy": "sanity deploy",
     "schema:deploy": "sanity schema deploy",
     "typegen": "sanity schema extract --enforce-required-fields --path ./schema.json && sanity typegen generate",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:validate": "node scripts/seed/validate-seed.mjs",
+    "seed:import": "npm run seed:validate && sanity dataset import scripts/seed/seed.ndjson --replace"
   },
   "dependencies": {
     "@sanity/icons": "^5.4.0",
