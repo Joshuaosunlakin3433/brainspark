@@ -1,59 +1,19 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Star } from "lucide-react";
+import { CourseGrid } from "@/components/course/course-grid";
+import { DecorativeBars } from "@/components/decorative-bars";
 import { HomeSearch } from "@/components/home-search";
 import { SiteHeader } from "@/components/site-header";
-import { CourseCard } from "@/components/ui";
-import { cn } from "@/lib/cn";
-import { placeholderCourses } from "@/lib/placeholder-courses";
+import { getCourses } from "@/lib/sanity/data";
 
-// Decorative bar clusters at the bottom of the page: [width px, height px, strength].
-const leftBars: [number, number, "soft" | "mid" | "strong"][] = [
-  [72, 90, "soft"],
-  [60, 130, "mid"],
-  [40, 152, "mid"],
-  [58, 190, "strong"],
-  [90, 132, "mid"],
-  [50, 96, "soft"],
-];
-const rightBars: [number, number, "soft" | "mid" | "strong"][] = [
-  [28, 60, "soft"],
-  [86, 92, "mid"],
-  [78, 114, "mid"],
-  [50, 150, "strong"],
-  [62, 186, "strong"],
-  [50, 94, "mid"],
-  [38, 132, "mid"],
-  [98, 170, "strong"],
-];
+// The home design shows one row of courses; "View all courses" leads to the rest.
+const HOME_COURSE_COUNT = 3;
 
-const barTone = {
-  soft: "from-primary-300/60",
-  mid: "from-primary-300/85",
-  strong: "from-primary-400/90",
-};
+export default async function Home() {
+  const courses = (await getCourses())
+    .filter((c) => c.slug)
+    .slice(0, HOME_COURSE_COUNT);
 
-function BarCluster({
-  bars,
-  className,
-}: {
-  bars: typeof leftBars;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex items-end", className)}>
-      {bars.map(([w, h, tone], i) => (
-        <div
-          key={i}
-          className={cn("bg-linear-to-t to-primary-100/0", barTone[tone])}
-          style={{ width: w, height: h }}
-        />
-      ))}
-    </div>
-  );
-}
-
-export default function Home() {
   return (
     <div className="flex flex-1 flex-col bg-canvas bg-hatch">
       <div className="mx-auto flex w-full max-w-270 flex-1 flex-col bg-canvas min-[1080px]:border-x min-[1080px]:border-neutral-200">
@@ -103,30 +63,11 @@ export default function Home() {
                 <ArrowRight className="size-5" strokeWidth={1.75} aria-hidden="true" />
               </Link>
             </div>
-            <ul className="mt-7 grid gap-4.5 sm:grid-cols-2 lg:grid-cols-3">
-              {placeholderCourses.map((course) => (
-                <li key={course.slug} className="min-h-93">
-                  <CourseCard
-                    layout="stacked"
-                    href={`/courses/${course.slug}`}
-                    icon={
-                      <Image
-                        src={course.icon.src}
-                        alt={course.icon.alt}
-                        width={72}
-                        height={72}
-                        className="size-18 object-contain"
-                      />
-                    }
-                    title={course.title}
-                    summary={course.summary}
-                    level={course.level}
-                    duration={course.duration}
-                    moduleCount={course.moduleCount}
-                  />
-                </li>
-              ))}
-            </ul>
+            {courses.length > 0 && (
+              <div className="mt-7">
+                <CourseGrid courses={courses} />
+              </div>
+            )}
 
             <div className="mt-16 flex items-center gap-4 sm:gap-8">
               <span className="h-px flex-1 bg-neutral-200" aria-hidden="true" />
@@ -143,13 +84,7 @@ export default function Home() {
           </section>
 
           {/* Decorative bars */}
-          <div
-            aria-hidden="true"
-            className="pointer-events-none mt-auto flex h-48 items-end justify-between overflow-hidden"
-          >
-            <BarCluster bars={leftBars} className="max-sm:scale-x-50 max-sm:origin-left" />
-            <BarCluster bars={rightBars} className="max-sm:scale-x-50 max-sm:origin-right" />
-          </div>
+          <DecorativeBars className="mt-auto" />
         </main>
       </div>
     </div>

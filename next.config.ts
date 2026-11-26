@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
     agentFeedback: true,
   },
   cacheComponents: true,
+  images: {
+    // Sanity image CDN (public asset URLs, no token).
+    remotePatterns: [new URL("https://cdn.sanity.io/images/**")],
+  },
   partialPrefetching: true,
 };
 
