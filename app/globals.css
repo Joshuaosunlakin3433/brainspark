@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 /* BrainSpark design system tokens — source: design/vertex-designsystem.png */
 @theme {
