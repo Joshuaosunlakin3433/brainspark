@@ -1,11 +1,18 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Fragment } from "react";
+import { cn } from "@/lib/cn";
 
-export function Breadcrumbs({ items }: { items: { label: string; href?: string }[] }) {
+export function Breadcrumbs({
+  items,
+  className,
+}: {
+  items: { label: string; href?: string }[];
+  className?: string;
+}) {
   return (
     <nav aria-label="Breadcrumb">
-      <ol className="flex flex-wrap items-center gap-2 text-small text-neutral-500">
+      <ol className={cn("flex flex-wrap items-center gap-2 text-small text-neutral-500", className)}>
         {items.map((item, i) => {
           const last = i === items.length - 1;
           return (
