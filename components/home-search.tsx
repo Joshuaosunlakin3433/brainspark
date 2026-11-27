@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, type FormEvent } from "react";
 import { Search } from "lucide-react";
+import { track } from "@/lib/analytics";
 
 export function HomeSearch() {
   const router = useRouter();
@@ -23,6 +24,7 @@ export function HomeSearch() {
     e.preventDefault();
     const q = inputRef.current?.value.trim();
     if (!q) return;
+    track("search_performed", { query: q, source: "home" });
     router.push(`/search?${new URLSearchParams({ q })}`);
   }
 

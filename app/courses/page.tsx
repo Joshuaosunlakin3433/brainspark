@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TrackOnMount } from "@/components/analytics/track-on-mount";
 import { CourseGrid } from "@/components/course/course-grid";
 import { DecorativeBars } from "@/components/decorative-bars";
 import { SiteHeader } from "@/components/site-header";
@@ -17,6 +18,7 @@ export default async function CoursesPage() {
     <div className="flex flex-1 flex-col bg-canvas bg-hatch">
       <div className="mx-auto flex w-full max-w-270 flex-1 flex-col bg-canvas min-[1080px]:border-x min-[1080px]:border-neutral-200">
         <SiteHeader />
+        <TrackOnMount event="catalog_viewed" props={{}} />
 
         <main className="flex flex-1 flex-col">
           <section aria-labelledby="all-courses" className="px-5 pt-8 pb-10 sm:px-13 sm:pt-12">
