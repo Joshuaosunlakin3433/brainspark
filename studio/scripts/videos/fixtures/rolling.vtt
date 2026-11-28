@@ -1,0 +1,32 @@
+WEBVTT
+Kind: captions
+Language: en
+
+00:00:00.160 --> 00:00:02.869 align:start position:0%
+ 
+in<00:00:00.480><c> this</c><00:00:00.640><c> video</c><00:00:00.880><c> we</c>
+
+00:00:02.869 --> 00:00:02.879 align:start position:0%
+in this video we
+ 
+
+00:00:02.879 --> 00:00:05.990 align:start position:0%
+in this video we
+talk<00:00:03.120><c> about</c><00:00:03.360><c> caching</c>
+
+00:00:05.990 --> 00:00:06.000 align:start position:0%
+talk about caching
+ 
+
+00:00:06.000 --> 00:00:12.000 align:start position:0%
+talk about caching
+and revalidation &amp; tags [Music]
+
+00:00:21.500 --> 00:00:24.000 align:start position:0%
+next we look at streaming
+
+00:00:64.000 --> 00:00:66.000
+bad timestamp is skipped
+
+00:01:05.000 --> 00:01:08.000
+after a long gap

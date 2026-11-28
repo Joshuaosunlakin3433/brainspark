@@ -1,0 +1,12 @@
+1
+00:00:01,000 --> 00:00:04,000
+<i>Server components</i> run on the server.
+
+2
+00:00:04,500 --> 00:00:09,000
+They never ship their code
+to the browser.
+
+3
+00:00:30,000 --> 00:00:33,000
+Client components hydrate.

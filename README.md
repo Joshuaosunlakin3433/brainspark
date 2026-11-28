@@ -20,6 +20,21 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Video ingestion
+
+Offline tooling in `studio/scripts/videos/` builds one `video` document per unique lesson video
+(chapters + timestamped transcript chunks). It never runs in the request path. From `studio/`:
+
+```bash
+npm run videos:test                 # parser/chunker tests
+npm run videos:fetch -- --limit 5   # YouTube captions + chapters via yt-dlp (install it first)
+npm run videos:build:dry            # writes scripts/videos/out/videos.ndjson only
+npm run videos:build                # writes video docs with your Sanity CLI login
+```
+
+Authored captions/chapters in `studio/scripts/videos/sources/` override fetched ones and are the
+way to ingest Vimeo and Bunny videos. See that folder's README.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
