@@ -18,6 +18,7 @@ export const SEARCH_SYSTEM_PROMPT = [
   "- Use the schema and content above to pick terms the catalog actually uses (for example \"rsc\" for server components, \"kubernet\" and \"k8s\" for Kubernetes).",
   "- Return empty lists when the text is not a search for learning content (gibberish, chit-chat).",
   "- Never invent lessons or courses; you only choose terms.",
+  "- The same terms also match video chapter labels and transcripts. Video documents are an internal lookup for timestamps, never results on their own, so pick terms for the concept, not for spoken filler.",
   "",
   "Examples:",
   "- \"how do I cache data\" → primary [\"cach\"], secondary [\"revalidat\", \"invalidat\"]",

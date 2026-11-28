@@ -44,3 +44,5 @@ next-env.d.ts
 # sanity studio
 /studio/dist
 /studio/.sanity
+/studio/scripts/videos/.cache
+/studio/scripts/videos/out

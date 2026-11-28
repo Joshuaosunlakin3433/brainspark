@@ -4,7 +4,7 @@ import { sanityFetch } from "@/lib/sanity/fetch";
 import { urlFor } from "@/lib/sanity/image";
 import { SEARCH_LESSONS_BY_IDS_QUERY } from "@/lib/sanity/queries";
 
-import type { AgentOutput, LessonResult, SearchResponse } from "./types";
+import type { AgentOutput, LessonResult, SearchResponse, SearchResult } from "./types";
 
 const MAX_RESULTS = 60;
 
@@ -12,7 +12,7 @@ const MAX_RESULTS = 60;
  * Turns the model's ranked ids into result cards built only from stored content.
  * Unknown ids, and lessons not placed in a course module, are dropped.
  */
-export async function hydrateLessonResults(
+export async function hydrateResults(
   query: string,
   matches: AgentOutput["matches"],
 ): Promise<SearchResponse> {
@@ -31,7 +31,7 @@ export async function hydrateLessonResults(
         });
   const byId = new Map(lessons.map((l) => [l._id, l]));
 
-  const results: LessonResult[] = [];
+  const results: SearchResult[] = [];
   for (const id of ids) {
     const lesson = byId.get(id);
     const course = lesson?.course;
@@ -43,15 +43,16 @@ export async function hydrateLessonResults(
     const lessonNumber = mod.lessonIds!.indexOf(id) + 1;
     const moduleNumber = moduleIndex + 1;
 
-    results.push({
-      kind: "lesson",
+    const match = ranked.get(id)!;
+    const duration = lesson.duration ?? null;
+    const base: Omit<LessonResult, "kind"> = {
       rank: results.length + 1,
-      tier: ranked.get(id)!.tier,
+      tier: match.tier,
       lesson: {
         id,
         title: lesson.title,
         slug: lesson.slug,
-        durationSeconds: lesson.duration ?? null,
+        durationSeconds: duration,
         posterUrl: lesson.poster?.asset ? urlFor(lesson.poster).width(640).height(360).url() : null,
         keyPoints: lesson.keyPoints ?? [],
         description: lesson.description || null,
@@ -65,7 +66,22 @@ export async function hydrateLessonResults(
       module: { title: mod.title, number: moduleNumber },
       label: `Lesson ${moduleNumber}.${lessonNumber}`,
       href: `/courses/${course.slug}/lessons/${lesson.slug}`,
-    });
+    };
+
+    // A moment past the lesson's end can't be real for this lesson: show it as a lesson.
+    const moment = match.moment;
+    const inRange = moment && (duration === null || moment.startSeconds < duration);
+    results.push(
+      moment && inRange
+        ? {
+            ...base,
+            kind: "video",
+            startSeconds: moment.startSeconds,
+            momentSource: moment.source,
+            href: `${base.href}?t=${moment.startSeconds}`,
+          }
+        : { ...base, kind: "lesson" },
+    );
   }
 
   return {

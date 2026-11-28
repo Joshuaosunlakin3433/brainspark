@@ -8,7 +8,7 @@ import { z } from "zod";
 import { connectContextMcp, getInitialContext } from "./context";
 import type { SearchEnv } from "./env";
 import { SEARCH_SYSTEM_PROMPT } from "./system-prompt";
-import type { AgentOutput, MatchTier } from "./types";
+import type { AgentOutput, MatchTier, VideoMoment } from "./types";
 
 /** The provider rejected the call for rate limits (Groq free tier). */
 export class SearchBusyError extends Error {}
@@ -44,6 +44,11 @@ const GENERIC = new Set(
 // Score weights per field. The main concept dominates; supporting terms only reorder.
 const PRIMARY_WEIGHTS = { title: 6, keyPoints: 4, notes: 2 };
 const SECONDARY_WEIGHTS = { title: 2, keyPoints: 1, notes: 1 };
+// Chapter labels are clean, so a chapter hit counts like a title hit; transcript text is noisy.
+const VIDEO_WEIGHTS = {
+  primary: { chapter: 5, transcript: 1 },
+  secondary: { chapter: 2, transcript: 0.5 },
+};
 
 /**
  * Finds lessons for a query and returns their ids ranked best first.
@@ -72,10 +77,15 @@ export async function findLessonMatches({
     if (primary.length === 0) [primary, secondary] = [secondary, []];
     if (primary.length === 0) return [];
 
-    onStatus?.("Searching lessons…");
-    const rows = await runGroq(mcp, rankingQuery(primary, secondary), signal);
-    if (!rows) throw new Error("Context MCP rejected the ranking query");
-    return toMatches(rows);
+    onStatus?.("Searching lessons and videos…");
+    const [lessonRows, videoRows] = await Promise.all([
+      runGroq<Row>(mcp, rankingQuery(primary, secondary), signal),
+      runGroq<VideoRow>(mcp, videoMomentQuery(primary, secondary), signal),
+    ]);
+    if (!lessonRows) throw new Error("Context MCP rejected the ranking query");
+    // Video moments refine results; if that query fails, lessons alone still answer.
+    if (!videoRows) console.error("[search] video moment query failed, returning lessons only");
+    return mergeMatches(lessonRows, videoRows ?? []);
   } catch (error) {
     if (isRateLimited(error)) throw new SearchBusyError("Search model rate limited", { cause: error });
     throw error;
@@ -113,8 +123,20 @@ async function planQuery(
 
 type Row = { _id: string; _score?: number };
 
+type VideoRow = Row & {
+  /** True when a chapter label matches a primary term: enough to qualify the lesson. */
+  primaryChapter?: boolean;
+  chapter?: { startSeconds?: unknown } | null;
+  chunk?: { startSeconds?: unknown } | null;
+  lessonIds?: unknown;
+};
+
 /** Runs a GROQ query through the Context MCP. Returns null when the query errors. */
-async function runGroq(mcp: MCPClient, groqQuery: string, signal: AbortSignal): Promise<Row[] | null> {
+async function runGroq<T extends Row>(
+  mcp: MCPClient,
+  groqQuery: string,
+  signal: AbortSignal,
+): Promise<T[] | null> {
   const res = await mcp.callTool({
     name: "groq_query",
     arguments: { query: groqQuery },
@@ -129,7 +151,7 @@ async function runGroq(mcp: MCPClient, groqQuery: string, signal: AbortSignal): 
     if (!Array.isArray(parsed.result)) return null;
     // Non-lesson ids are dropped later by hydration, which only fetches _type == "lesson".
     return parsed.result.filter(
-      (r): r is Row => typeof r === "object" && r !== null && typeof (r as Row)._id === "string",
+      (r): r is T => typeof r === "object" && r !== null && typeof (r as Row)._id === "string",
     );
   } catch {
     // Not JSON: the MCP reports query errors as plain text.
@@ -184,10 +206,77 @@ function rankingQuery(primary: string[], secondary: string[]): string {
   return `*[_type == "lesson" && (${filter})] | score(${score}) | order(_score desc)[0...60]{ _id, _score }`;
 }
 
-/** Keeps result order; tiers are relative to the best score. */
-function toMatches(rows: Row[]): AgentOutput["matches"] {
-  const top = Math.max(0, ...rows.map((r) => r._score ?? 0));
-  return rows.map((r) => ({ lessonId: r._id, tier: tierFor(r._score, top) }));
+/**
+ * Video moments (AGENTS.md §7, §11): chapters first, the transcript as the backstop.
+ * Only a primary term qualifies a video; secondary terms add score. Projects just the
+ * first matching chapter and chunk start, never the chapters or chunks arrays (§12),
+ * and the lessons that use the video (videos are an internal lookup, never results).
+ */
+function videoMomentQuery(primary: string[], secondary: string[]): string {
+  const p = primary.map((k) => JSON.stringify(k));
+  const s = secondary.map((k) => JSON.stringify(k));
+  const any = (terms: string[], field: string) => terms.map((t) => `${field} match ${t}`).join(" || ");
+  const first = (array: string, field: string) => {
+    const pick = (terms: string[]) => `${array}[${any(terms, field)}][0]{ startSeconds }`;
+    return s.length ? `coalesce(${pick(p)}, ${pick(s)})` : pick(p);
+  };
+  const score = [
+    ...p.flatMap((t) => [
+      `boost(chapters[].label match ${t}, ${VIDEO_WEIGHTS.primary.chapter})`,
+      `boost(chunks[].text match ${t}, ${VIDEO_WEIGHTS.primary.transcript})`,
+    ]),
+    ...s.flatMap((t) => [
+      `boost(chapters[].label match ${t}, ${VIDEO_WEIGHTS.secondary.chapter})`,
+      `boost(chunks[].text match ${t}, ${VIDEO_WEIGHTS.secondary.transcript})`,
+    ]),
+  ].join(", ");
+  return `*[_type == "video" && (${any(p, "chapters[].label")} || ${any(p, "chunks[].text")})]
+  | score(${score}) | order(_score desc)[0...80]{
+    _id, _score,
+    "primaryChapter": count(chapters[${any(p, "label")}]) > 0,
+    "chapter": ${first("chapters", "label")},
+    "chunk": ${first("chunks", "text")},
+    "lessonIds": *[_type == "lesson" && videoUrl == ^.url]._id
+  }`;
+}
+
+/**
+ * One match per lesson. A lesson qualifies by its own topic or by a primary chapter
+ * match; a transcript-only hit is too noisy to qualify a lesson alone, but still gives
+ * a topic-matched lesson its moment. Score = topic score + video score.
+ */
+function mergeMatches(lessonRows: Row[], videoRows: VideoRow[]): AgentOutput["matches"] {
+  const merged = new Map<string, { score: number; moment: VideoMoment | null }>();
+  for (const r of lessonRows) merged.set(r._id, { score: r._score ?? 0, moment: null });
+
+  for (const v of videoRows) {
+    const moment = momentOf(v);
+    const ids = Array.isArray(v.lessonIds) ? v.lessonIds.filter((id) => typeof id === "string") : [];
+    for (const id of ids) {
+      const entry = merged.get(id);
+      if (!entry && !v.primaryChapter) continue;
+      const base = entry?.score ?? 0;
+      // A lesson has one video; keep the first (best scored) if ids ever repeat.
+      if (entry?.moment) continue;
+      merged.set(id, { score: base + (v._score ?? 0), moment });
+    }
+  }
+
+  const ranked = [...merged].sort((a, b) => b[1].score - a[1].score);
+  const top = Math.max(0, ...ranked.map(([, m]) => m.score));
+  return ranked.map(([lessonId, m]) => ({
+    lessonId,
+    tier: tierFor(m.score, top),
+    moment: m.moment,
+  }));
+}
+
+function momentOf(v: VideoRow): VideoMoment | null {
+  const seconds = (x: unknown) => (Number.isInteger(x) && (x as number) >= 0 ? (x as number) : null);
+  const chapter = seconds(v.chapter?.startSeconds);
+  if (chapter !== null) return { startSeconds: chapter, source: "chapter" };
+  const chunk = seconds(v.chunk?.startSeconds);
+  return chunk !== null ? { startSeconds: chunk, source: "transcript" } : null;
 }
 
 function tierFor(score: number | undefined, top: number): MatchTier {

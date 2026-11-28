@@ -1,6 +1,6 @@
 import { findLessonMatches, SearchBusyError } from "@/lib/search/agent";
 import { getSearchEnv, SearchConfigError } from "@/lib/search/env";
-import { hydrateLessonResults } from "@/lib/search/hydrate";
+import { hydrateResults } from "@/lib/search/hydrate";
 import { searchRequestSchema, type SearchStreamEvent } from "@/lib/search/types";
 
 const TIMEOUT_MS = 60_000;
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
           onStatus: (message) => send({ type: "status", message }),
         });
         send({ type: "status", message: "Ranking results…" });
-        const response = await hydrateLessonResults(query, matches);
+        const response = await hydrateResults(query, matches);
         send({ type: "results", ...response });
       } catch (error) {
         // Details stay in the server log; upstream bodies can include internals.

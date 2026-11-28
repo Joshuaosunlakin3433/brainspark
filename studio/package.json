@@ -11,7 +11,11 @@
     "typegen": "sanity schema extract --enforce-required-fields --path ./schema.json && sanity typegen generate",
     "typecheck": "tsc --noEmit",
     "seed:validate": "node scripts/seed/validate-seed.mjs",
-    "seed:import": "npm run seed:validate && sanity dataset import scripts/seed/seed.ndjson --replace"
+    "seed:import": "npm run seed:validate && sanity dataset import scripts/seed/seed.ndjson --replace",
+    "videos:test": "node --test scripts/videos/ingest.test.mjs",
+    "videos:fetch": "sanity exec scripts/videos/ingest.mjs --with-user-token -- fetch",
+    "videos:build": "sanity exec scripts/videos/ingest.mjs --with-user-token -- build",
+    "videos:build:dry": "sanity exec scripts/videos/ingest.mjs --with-user-token -- build --dry-run"
   },
   "dependencies": {
     "@sanity/icons": "^5.4.0",
