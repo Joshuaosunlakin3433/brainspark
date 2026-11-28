@@ -110,6 +110,27 @@ export const LESSON_BY_SLUG_QUERY = defineQuery(`
   }
 `);
 
+// Search hydration: re-fetch model-picked ids so every card is built from stored data.
+// Module and lesson numbers come from the course's module order (computed in code).
+export const SEARCH_LESSONS_BY_IDS_QUERY = defineQuery(`
+  *[_type == "lesson" && _id in $ids && defined(slug.current)]{
+    _id,
+    title,
+    "slug": slug.current,
+    duration,
+    poster ${IMAGE},
+    keyPoints,
+    "description": pt::text(notes[_type == "block" && style == "normal"][0]),
+    "course": *[_type == "course" && references(^._id) && defined(slug.current)][0]{
+      _id,
+      title,
+      "slug": slug.current,
+      icon ${IMAGE},
+      "modules": modules[]{ title, "lessonIds": lessons[]._ref }
+    }
+  }
+`);
+
 export const INSTRUCTOR_SLUGS_QUERY = defineQuery(`
   *[_type == "instructor" && defined(slug.current)]{ "slug": slug.current }
 `);
