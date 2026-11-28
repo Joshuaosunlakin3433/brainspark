@@ -208,17 +208,22 @@ function rankingQuery(primary: string[], secondary: string[]): string {
 
 /**
  * Video moments (AGENTS.md §7, §11): chapters first, the transcript as the backstop.
- * Only a primary term qualifies a video; secondary terms add score. Projects just the
- * first matching chapter and chunk start, never the chapters or chunks arrays (§12),
+ * Only a primary term qualifies a video; secondary terms add score. Projects just one
+ * matching chapter and chunk start, never the chapters or chunks arrays (§12),
  * and the lessons that use the video (videos are an internal lookup, never results).
  */
 function videoMomentQuery(primary: string[], secondary: string[]): string {
   const p = primary.map((k) => JSON.stringify(k));
   const s = secondary.map((k) => JSON.stringify(k));
   const any = (terms: string[], field: string) => terms.map((t) => `${field} match ${t}`).join(" || ");
+  // A match at 0:00 is usually the video's title/intro naming the topic, so prefer the
+  // first match after it. Order: primary later, primary any, secondary later, secondary any.
   const first = (array: string, field: string) => {
-    const pick = (terms: string[]) => `${array}[${any(terms, field)}][0]{ startSeconds }`;
-    return s.length ? `coalesce(${pick(p)}, ${pick(s)})` : pick(p);
+    const pick = (terms: string[], later: boolean) =>
+      `${array}[(${any(terms, field)})${later ? " && startSeconds > 0" : ""}][0]{ startSeconds }`;
+    const picks = [pick(p, true), pick(p, false)];
+    if (s.length) picks.push(pick(s, true), pick(s, false));
+    return `coalesce(${picks.join(", ")})`;
   };
   const score = [
     ...p.flatMap((t) => [
