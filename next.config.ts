@@ -19,8 +19,9 @@ const nextConfig: NextConfig = {
   },
   cacheComponents: true,
   images: {
-    // Sanity image CDN (public asset URLs, no token).
-    remotePatterns: [new URL("https://cdn.sanity.io/images/**")],
+    // Sanity image CDN (public asset URLs, no token). Object form with no `search`, so
+    // transform params (?w=&h=&rect=) are allowed; `new URL(...)` implied an empty search.
+    remotePatterns: [{ protocol: "https", hostname: "cdn.sanity.io", pathname: "/images/**" }],
   },
   partialPrefetching: true,
 };

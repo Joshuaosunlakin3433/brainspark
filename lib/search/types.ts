@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Shared between the search route and the (future) results page. No secrets, no server imports.
+// Shared between the search route and the (future) results page (app/search). No secrets, no server imports.
 
 export const searchRequestSchema = z.object({
   q: z.string().trim().min(2).max(200),
@@ -11,19 +11,16 @@ export type SearchRequest = z.infer<typeof searchRequestSchema>;
 export const matchTiers = ["exact", "strong", "related"] as const;
 export type MatchTier = (typeof matchTiers)[number];
 
-/** What the model must return: lesson ids from tool results, best first. Nothing it writes is shown. */
-export const agentOutputSchema = z.object({
-  matches: z
-    .array(
-      z.object({
-        lessonId: z.string().min(1).max(128),
-        tier: z.enum(matchTiers),
-      }),
-    )
-    .max(100),
-});
+/** Where in a lesson's video the query matched: a chapter first, else a transcript chunk. */
+export type VideoMoment = {
+  startSeconds: number;
+  source: "chapter" | "transcript";
+};
 
-export type AgentOutput = z.infer<typeof agentOutputSchema>;
+/** Ranked lesson ids from the search queries, best first. Callers must re-fetch the ids. */
+export type AgentOutput = {
+  matches: { lessonId: string; tier: MatchTier; moment: VideoMoment | null }[];
+};
 
 type ResultCourse = { id: string; title: string; slug: string; iconUrl: string | null };
 type ResultModule = { title: string; number: number };
@@ -49,7 +46,7 @@ export type LessonResult = {
   href: string;
 };
 
-/** A lesson's video matched at a moment. Typed now, produced once video ingestion lands. */
+/** A lesson's video matched at a moment. */
 export type VideoResult = {
   kind: "video";
   rank: number;
@@ -59,7 +56,8 @@ export type VideoResult = {
   module: ResultModule;
   label: string;
   startSeconds: number;
-  matchedText: string;
+  /** Whether the moment came from a chapter label or the transcript. */
+  momentSource: VideoMoment["source"];
   /** Lesson page URL with `?t=<startSeconds>`. */
   href: string;
 };

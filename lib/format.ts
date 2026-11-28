@@ -22,3 +22,12 @@ export function capitalize(value: string | null | undefined): string {
 function trimZero(s: string) {
   return s.endsWith(".0") ? s.slice(0, -2) : s;
 }
+
+/** Seconds → "12:45" or "1:02:03" (video clock). */
+export function formatClock(totalSeconds: number | null | undefined): string {
+  const s = Math.max(0, Math.floor(totalSeconds ?? 0));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = String(s % 60).padStart(2, "0");
+  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+}

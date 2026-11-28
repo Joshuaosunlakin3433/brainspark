@@ -29,3 +29,8 @@ A title that names the exact concept beats a broad keyword hit.
 - Weight the main concept higher (title 6, keyPoints 4, notes 2) than supporting terms (title 2, keyPoints 1, notes 1).
 - Generic words (data, code, app, use, build, work, learn) flood results in this catalog. Leave them out unless they are the whole topic.
 - A two-word concept is one string: `title match "server* component*"` requires both words.
+
+### Video moments
+- `video` documents are an internal lookup for timestamps, never results. A video belongs to the lesson(s) with the same URL: `*[_type == "lesson" && videoUrl == ^.url]`.
+- Match `chapters[].label` first; fall back to `chunks[].text` only when no chapter matches. Chapter labels are clean, transcript text is noisy.
+- Project only the first matching item, e.g. `"chapter": chapters[label match "fetch*"][0]{ startSeconds }`. Never return `chunks` or `chapters` whole: transcripts overflow the context window.
